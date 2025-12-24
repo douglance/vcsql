@@ -36,11 +36,11 @@ fn execute_query(args: &Args, sql: &str) -> Result<()> {
     let mut engine = SqlEngine::new()?;
 
     for repo_path in &args.repo {
-        let repo = GitRepo::open(repo_path)
+        let mut repo = GitRepo::open(repo_path)
             .with_context(|| format!("Failed to open repository: {}", repo_path.display()))?;
 
         engine
-            .load_tables_for_query(sql, &repo)
+            .load_tables_for_query(sql, &mut repo)
             .with_context(|| "Failed to load tables")?;
     }
 

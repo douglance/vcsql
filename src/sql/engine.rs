@@ -1,6 +1,11 @@
 use crate::error::{Result, VcsqlError};
 use crate::git::GitRepo;
-use crate::providers::{BranchesProvider, CommitParentsProvider, CommitsProvider, Provider};
+use crate::providers::{
+    BlameProvider, BranchesProvider, CommitParentsProvider, CommitsProvider, ConfigProvider,
+    DiffFilesProvider, DiffsProvider, HooksProvider, NotesProvider, Provider, ReflogProvider,
+    RefsProvider, RemotesProvider, StashesProvider, StatusProvider, SubmodulesProvider,
+    TagsProvider, WorktreesProvider,
+};
 use crate::sql::schema::{get_table_info, TABLES};
 use regex::Regex;
 use rusqlite::{Connection, Row};
@@ -26,10 +31,8 @@ impl SqlEngine {
 
         let table_names: Vec<&str> = TABLES.iter().map(|t| t.name).collect();
 
-        let pattern = format!(
-            r"(?i)\b(FROM|JOIN|INTO|UPDATE)\s+(\w+)",
-        );
-        let re = Regex::new(&pattern).unwrap();
+        let pattern = r"(?i)\b(FROM|JOIN|INTO|UPDATE)\s+(\w+)";
+        let re = Regex::new(pattern).unwrap();
 
         for cap in re.captures_iter(query) {
             if let Some(table_match) = cap.get(2) {
@@ -51,7 +54,7 @@ impl SqlEngine {
         tables
     }
 
-    pub fn load_table(&mut self, table_name: &str, repo: &GitRepo) -> Result<()> {
+    pub fn load_table(&mut self, table_name: &str, repo: &mut GitRepo) -> Result<()> {
         if self.loaded_tables.contains(table_name) {
             return Ok(());
         }
@@ -65,6 +68,20 @@ impl SqlEngine {
             "commits" => Box::new(CommitsProvider),
             "commit_parents" => Box::new(CommitParentsProvider),
             "branches" => Box::new(BranchesProvider),
+            "tags" => Box::new(TagsProvider),
+            "refs" => Box::new(RefsProvider),
+            "stashes" => Box::new(StashesProvider),
+            "reflog" => Box::new(ReflogProvider),
+            "diffs" => Box::new(DiffsProvider),
+            "diff_files" => Box::new(DiffFilesProvider),
+            "blame" => Box::new(BlameProvider::new(None)),
+            "config" => Box::new(ConfigProvider),
+            "remotes" => Box::new(RemotesProvider),
+            "submodules" => Box::new(SubmodulesProvider),
+            "status" => Box::new(StatusProvider),
+            "worktrees" => Box::new(WorktreesProvider),
+            "hooks" => Box::new(HooksProvider),
+            "notes" => Box::new(NotesProvider),
             _ => return Err(VcsqlError::TableNotFound(table_name.to_string())),
         };
 
@@ -74,7 +91,7 @@ impl SqlEngine {
         Ok(())
     }
 
-    pub fn load_tables_for_query(&mut self, query: &str, repo: &GitRepo) -> Result<()> {
+    pub fn load_tables_for_query(&mut self, query: &str, repo: &mut GitRepo) -> Result<()> {
         let tables = Self::extract_table_names(query);
         for table in tables {
             self.load_table(&table, repo)?;

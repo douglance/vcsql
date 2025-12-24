@@ -37,6 +37,10 @@ impl GitRepo {
         &self.repo
     }
 
+    pub fn inner_mut(&mut self) -> &mut Repository {
+        &mut self.repo
+    }
+
     pub fn head(&self) -> Result<Reference<'_>> {
         Ok(self.repo.head()?)
     }

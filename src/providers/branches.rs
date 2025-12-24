@@ -11,7 +11,7 @@ impl Provider for BranchesProvider {
         "branches"
     }
 
-    fn populate(&self, conn: &Connection, repo: &GitRepo) -> Result<()> {
+    fn populate(&self, conn: &Connection, repo: &mut GitRepo) -> Result<()> {
         let mut stmt = conn.prepare(
             r#"
             INSERT INTO branches (

@@ -10,7 +10,7 @@ impl Provider for CommitParentsProvider {
         "commit_parents"
     }
 
-    fn populate(&self, conn: &Connection, repo: &GitRepo) -> Result<()> {
+    fn populate(&self, conn: &Connection, repo: &mut GitRepo) -> Result<()> {
         let mut stmt = conn.prepare(
             r#"
             INSERT INTO commit_parents (commit_id, parent_id, parent_index, repo)
